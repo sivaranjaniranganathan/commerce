@@ -59,7 +59,16 @@ class OrderReceiptMail implements OrderReceiptMailInterface {
       return FALSE;
     }
 
-    $subject = $this->t('Order #@number confirmed', ['@number' => $order->getOrderNumber()]);
+    $sid = $order->field_submission_id->getValue()[0]['value'];
+    $submission = \Drupal\webform\Entity\WebformSubmission::load($sid);
+    $submission_data = $submission->getData();
+    $first_name = $submission_data['field_first_name'];
+    $last_name = $submission_data['field_last_name'];
+    $customer_name = $first_name." ".$last_name;
+
+    $customer_name = isset($customer_name) ? $customer_name : $order->getEmail();
+    $subject = $this->t('Registration Confirmed : @customer_name', ['@customer_name' => $customer_name]);
+
     $body = [
       '#theme' => 'commerce_order_receipt',
       '#order_entity' => $order,
@@ -69,6 +78,8 @@ class OrderReceiptMail implements OrderReceiptMailInterface {
       $body['#billing_information'] = $this->profileViewBuilder->view($billing_profile);
     }
 
+    $bcc = $to;
+    
     $params = [
       'id' => 'order_receipt',
       'from' => $order->getStore()->getEmail(),
@@ -80,6 +91,7 @@ class OrderReceiptMail implements OrderReceiptMailInterface {
       $params['langcode'] = $customer->getPreferredLangcode();
     }
 
+    $to = "registration@thesnellgroup.com";
     return $this->mailHandler->sendMail($to, $subject, $body, $params);
   }
 
